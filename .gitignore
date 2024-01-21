@@ -5,6 +5,7 @@
 /bin
 out
 build
+results
 cmake-build-*/
 CMakeSettings.json
 Testing
