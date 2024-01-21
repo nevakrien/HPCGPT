@@ -2,6 +2,7 @@
 .idea/
 .vs/
 /app/bin
+/benchmark/bin
 /bin
 out
 build
