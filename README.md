@@ -15,7 +15,7 @@ Accompanying blog post: [Write a GPT from scratch (TinyGPT)](https://robot9.me/w
 ### 1. Get the code
 
 ```bash
-git clone --recurse-submodules https://github.com/keith2018/TinyGPT.git
+git clone --recurse-submodules https://github.com/nevakrien/HPCGPT.git
 ```
 
 ### 2. Install Intel MKL(Math Kernel Library)
@@ -33,7 +33,7 @@ if success, you'll see the file `model_file.data` in directory `assets/gpt2`
 
 ```bash
 mkdir build
-cmake -B ./build -DCMAKE_BUILD_TYPE=Release
+cmake -B ./build -DCMAKE_BUILD_TYPE=RelWithDebInfo
 cmake --build ./build --config Release
 ```
 
