@@ -8,7 +8,7 @@ class PerfEventData:
 	process_id: int
 	timestamp: float
 	cycles: int
-	event_name: str
+	event_gatherer: str
 	memory_address: str
 	function_name: str
 	#event_context: str
@@ -23,7 +23,7 @@ class PerfEventData:
 		self.process_id = int(split_data[1])
 		self.timestamp = float(split_data[2].rstrip(':'))
 		self.cycles = int(split_data[3])
-		self.event_name = split_data[4]
+		self.event_gatherer = split_data[4]
 		self.memory_address = split_data[5]
 
 		# Combine the remaining fields in the "code name" part
@@ -37,7 +37,7 @@ class PerfEventData:
 			"process_id": self.process_id,
 			"timestamp": self.timestamp,
 			"cycles": self.cycles,
-			"event_name": self.event_name,
+			"event_gatherer": self.event_gatherer,
 			"memory_address": self.memory_address,
 			"function_name": self.function_name,
 			#"event_context": self.event_context
@@ -123,6 +123,8 @@ def plot_include(processes,include):
 	plot_combined(processes,[x for x in a if x not in include])
 
 
+def sentize_name(name):
+	return name.split('+')[0]
 
 if __name__=="__main__":
 
@@ -133,7 +135,7 @@ if __name__=="__main__":
 
 	#print(data[:3])
 	#print(max([d['cycles'] for d in data]))
-	#print(Counter([d['event_name'] for d in data]))
+	#print(Counter([d['event_gatherer'] for d in data]))
 	#print(len(Counter([d['process_id'] for d in data])))
 	proces={k:[] for k in set([d['process_id'] for d in data])}
 	for d in data:
@@ -147,3 +149,10 @@ if __name__=="__main__":
 	#plot(proces)
 	plot_combined(proces)
 	#plot_include(proces,[4,5,6,0])
+
+	#print({k[:10]:v for k,v in Counter(d['function_name'] for d in data).items()})
+	#print(list(Counter(sentize_name(d['function_name']) for d in data).keys())[:10])
+	#print(len(Counter(sentize_name(d['function_name']) for d in data)))
+
+	# for k,v in Counter(sentize_name(d['function_name']) for d in data).items():
+	# 	print(f'{v} : {k}')

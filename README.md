@@ -62,3 +62,11 @@ INPUT:exit
 ## License
 
 This code is licensed under the MIT License (see [LICENSE](LICENSE)).
+
+# self notes
+
+I have looked at both vtune and perf and the code is basicly linear so its really wasting a lot of potential even on an 8 core system it would probably do poorly. 
+
+looking into what I can get out of perf wasnt enogh i did an attempt of this but it seems to just be random parts of code with no structure we need to tell the profiler exacly what part of code we care about 
+
+gona try adding some tooling around this I would do my best to macro it in a way where u can toggle it on or off depending on what u want. maybe I would just make 2 diffrent areas of code but that seems fishy
