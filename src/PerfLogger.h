@@ -15,8 +15,8 @@
 #include <iostream>
 
 
-// Check if TIME_BENCHMARK is defined
-#ifdef TIME_BENCHMARK
+// Check if NEVA_TIME_BENCHMARK is defined
+#ifdef NEVA_TIME_BENCHMARK
 
 
 namespace LogEvents {
@@ -41,13 +41,13 @@ public:
         logBuffer.push_back(logEntry.str());
 
         // Debug print
-        std::cerr << "Logged event: " << logEntry.str() << std::endl;
+        //std::cerr << "Logged event: " << logEntry.str() << std::endl;
     }
 
     ~PerfLogger() {
         writeToDisk(LogEvents::OutputFile);
         // Debug print
-        std::cerr << "Destructor called, writing log to disk." << std::endl;
+        //std::cerr << "Destructor called, writing log to disk." << std::endl;
     }
 
 private:
@@ -80,6 +80,6 @@ private:
 
 #define LOG_EVENT(event)
 
-#endif // TIME_BENCHMARK
+#endif // NEVA_TIME_BENCHMARK
 
 #endif // PERFLOGGER_H

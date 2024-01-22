@@ -41,7 +41,7 @@ This will generate the executable file and copy assets to directory `build/bin`,
 
 ```bash
 mkdir build_timer
-cmake -B ./build_timer -DCMAKE_BUILD_TYPE=RelWithDebInfo -DTIME_BENCHMARK=1
+cmake -B ./build_timer -DCMAKE_BUILD_TYPE=RelWithDebInfo -DNEVA_TIME_BENCHMARK=ON
 cmake --build ./build_timer --config Release
 ```
 

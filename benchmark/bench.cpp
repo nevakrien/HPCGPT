@@ -3,10 +3,13 @@
  * @author 	: keith@robot9.me
  *
  */
+#include"PerfLogger.h"
+
 #include <iostream>
 #include "Logger.h"
 #include "Tokenizer.h"
 #include "Model.h"
+
 
 #include <cassert>
 #include <cstdio>
@@ -25,10 +28,10 @@ using namespace TinyGPT;
 
 int main() {
 
-  #ifdef TIME_BENCHMARK
-  std::cout << "TIME_BENCHMARK is defined." << std::endl;
+  #ifdef NEVA_TIME_BENCHMARK
+  std::cout << "NEVA_TIME_BENCHMARK is defined." << std::endl;
   #else
-  std::cout << "TIME_BENCHMARK is not defined." << std::endl;
+  std::cout << "NEVA_TIME_BENCHMARK is not defined." << std::endl;
   #endif
 
 
