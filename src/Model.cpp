@@ -3,10 +3,13 @@
  * @author 	: keith@robot9.me
  *
  */
+#include"PerfLogger.h"
+
 
 #include "Model.h"
 #include "FileUtils.h"
 #include "Timer.h"
+
 
 #include <cmath>
 
@@ -113,6 +116,7 @@ Tensor Model::transformerBlock(const Tensor &x, const TransformerBlock &block, u
 }
 
 Tensor Model::gpt2(const std::vector<int32_t> &inputs, const GPT2::Params &params, uint32_t head, std::vector<KVCache> &cache) {
+  LOG_EVENT(LogEvents::Start);//checking
   bool useCache = !cache.empty();
 
   // token + positional embeddings
@@ -133,7 +137,10 @@ Tensor Model::gpt2(const std::vector<int32_t> &inputs, const GPT2::Params &param
 
   // projection to vocab
   x = layerNorm(x, params.ln_f.g, params.ln_f.b);
-  return Tensor::matmulTrans(x, params.wte);
+  //return Tensor::matmulTrans(x, params.wte);
+  x=Tensor::matmulTrans(x, params.wte);
+  LOG_EVENT(LogEvents::End);
+  return x;
 }
 
 void Model::generate(std::vector<int32_t> &tokens, const GPT2::Params &params, uint32_t head,

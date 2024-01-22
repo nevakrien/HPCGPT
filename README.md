@@ -33,20 +33,16 @@ if success, you'll see the file `model_file.data` in directory `assets/gpt2`
 
 ```bash
 mkdir build
-cmake -B ./build -DCMAKE_BUILD_TYPE=RelWithDebInfo
+cmake -B ./build -DCMAKE_BUILD_TYPE=RelWithDebInfo 
 cmake --build ./build --config Release
 ```
 
-This will generate the executable file and copy assets to directory `app/bin`, then you can run the demo:
+This will generate the executable file and copy assets to directory `build/bin`, then you can run the demo:
 
 ```bash
-cd app/bin
-./TinyGPT_demo
-[DEBUG] TIMER TinyGPT::Model::loadModelGPT2: cost: 800 ms
-[DEBUG] TIMER TinyGPT::Encoder::getEncoder: cost: 191 ms
-INPUT:Alan Turing theorized that computers would one day become
-GPT:the most powerful machines on the planet.
-INPUT:exit
+mkdir build_timer
+cmake -B ./build_timer -DCMAKE_BUILD_TYPE=RelWithDebInfo -DTIME_BENCHMARK=1
+cmake --build ./build_timer --config Release
 ```
 
 ## Dependencies

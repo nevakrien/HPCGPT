@@ -24,6 +24,14 @@
 using namespace TinyGPT;
 
 int main() {
+
+  #ifdef TIME_BENCHMARK
+  std::cout << "TIME_BENCHMARK is defined." << std::endl;
+  #else
+  std::cout << "TIME_BENCHMARK is not defined." << std::endl;
+  #endif
+
+
   GPT2 gpt2;
 
   // load model

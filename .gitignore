@@ -1,11 +1,12 @@
 .DS_Store
 .idea/
 .vs/
-/app/bin
-/benchmark/bin
-/bin
+# /app/bin
+# /benchmark/bin
+# /bin
 out
 build
+build_timer
 results
 cmake-build-*/
 CMakeSettings.json
