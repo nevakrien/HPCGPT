@@ -27,14 +27,18 @@ Tensor Model::softmax(const Tensor &x) {
 }
 
 Tensor Model::layerNorm(const Tensor &x, const Tensor &g, const Tensor &b, float eps) {
+  LOG_EVENT(LogEvents::NormStart);
   auto mean = Tensor::mean(x, -1, true);
   auto variance = Tensor::var(x, -1, true);
 
   // normalize x to have mean=0 and var=1 over last axis
   auto norm = (x - mean) / Tensor::sqrt(variance + eps);
 
+  norm=g * norm + b;
   // scale and offset with gamma/beta params
-  return g * norm + b;
+
+  LOG_EVENT(LogEvents::NormEnd);
+  return norm;
 }
 
 Tensor Model::linear(const Tensor &x, const Tensor &w, const Tensor &b) {
@@ -42,11 +46,15 @@ Tensor Model::linear(const Tensor &x, const Tensor &w, const Tensor &b) {
 }
 
 Tensor Model::feadForward(const Tensor &x, const Conv1D &fc, const Conv1D &proj) {
+  LOG_EVENT(LogEvents::FFStart);
   // project up
   auto a = gelu(linear(x, fc.w, fc.b));
 
   // project back down
-  return linear(a, proj.w, proj.b);
+  a = linear(a, proj.w, proj.b);
+
+  LOG_EVENT(LogEvents::FFEnd);
+  return a;
 }
 
 Tensor Model::attention(const Tensor &q, const Tensor &k, const Tensor &v, const Tensor &mask) {
@@ -57,6 +65,7 @@ Tensor Model::attention(const Tensor &q, const Tensor &k, const Tensor &v, const
 }
 
 Tensor Model::multiHeadAttention(const Tensor &x, const Conv1D &attn, const Conv1D &proj, uint32_t head, KVCache &cache) {
+  LOG_EVENT(LogEvents::MultiStart);
   // qkv projection
   auto xx = linear(x, attn.w, attn.b);
 
@@ -101,10 +110,13 @@ Tensor Model::multiHeadAttention(const Tensor &x, const Conv1D &attn, const Conv
   // out projection
   xx = linear(xx, proj.w, proj.b);
 
+  LOG_EVENT(LogEvents::MultiEnd);
   return xx;
 }
 
 Tensor Model::transformerBlock(const Tensor &x, const TransformerBlock &block, uint32_t head, KVCache &cache) {
+  LOG_EVENT(LogEvents::BlockStart);
+
   // multi-head causal self attention
   auto norm = layerNorm(x, block.ln_1.g, block.ln_1.b);
   auto xx = x + multiHeadAttention(norm, block.attn.c_attn, block.attn.c_proj, head, cache);
@@ -112,6 +124,8 @@ Tensor Model::transformerBlock(const Tensor &x, const TransformerBlock &block, u
   // position-wise feed forward network
   norm = layerNorm(xx, block.ln_2.g, block.ln_2.b);
   xx += feadForward(norm, block.mlp.c_fc, block.mlp.c_proj);
+
+  LOG_EVENT(LogEvents::BlockEnd);
   return xx;
 }
 

@@ -9,7 +9,7 @@
 #include <chrono>
 #include <fstream>
 #include <string>
-#include <vector>
+#include <forward_list>
 #include <sstream>
 
 #include <iostream>
@@ -19,15 +19,34 @@
 #ifdef NEVA_TIME_BENCHMARK
 
 
+//convention dont put any spaces in the name or new lines python parses based on those
 namespace LogEvents {
-    constexpr const char* Start = "Start";
-    constexpr const char* End = "End";
-    constexpr const char* OutputFile = "perf_output.txt";
+    constexpr const char* Start = "Started program";
+    constexpr const char* End = "Ended program";
+    
+    constexpr const char* MultiStart = "Started MultiHeadAttention";
+    constexpr const char* MultiEnd = "Ended MultiHeadAttention";
+
+    constexpr const char* BlockStart = "Started transformerBlock";
+    constexpr const char* BlockEnd = "Ended transformerBlock";
+
+    constexpr const char* FFStart = "Started feadForward";
+    constexpr const char* FFEnd = "Ended feadForward";
+
+    constexpr const char* NormStart = "Started layerNorm";
+    constexpr const char* NormEnd = "Ended layerNorm";
+
+    constexpr const char* OutputFile = "code_perf_output.txt";
     // Add more event names as needed
 }
 
 class PerfLogger {
 public:
+    struct LogEntry {
+        std::string eventName;
+        long long duration; // Duration in nanoseconds
+    };
+
     static PerfLogger& getInstance() {
         static PerfLogger instance;
         return instance;
@@ -35,39 +54,29 @@ public:
 
     void logEvent(const char* eventName) {
         auto now = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(now - startTime).count();
-        std::stringstream logEntry;
-        logEntry << "Event: " << eventName << " at " << duration << " ms";
-        logBuffer.push_back(logEntry.str());
-
-        // Debug print
-        //std::cerr << "Logged event: " << logEntry.str() << std::endl;
+        auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(now - startTime).count();
+        logBuffer.push_front({eventName, duration});
     }
 
     ~PerfLogger() {
         writeToDisk(LogEvents::OutputFile);
-        // Debug print
-        //std::cerr << "Destructor called, writing log to disk." << std::endl;
     }
 
 private:
     std::chrono::time_point<std::chrono::high_resolution_clock> startTime;
-    std::vector<std::string> logBuffer;
-    PerfLogger() {
-        startTime = std::chrono::high_resolution_clock::now();
-    }
+    std::forward_list<LogEntry> logBuffer;
+    PerfLogger() : startTime(std::chrono::high_resolution_clock::now()) {}
 
     void writeToDisk(const char* filePath) {
-        std::cerr << "Attempting to write to disk at " << filePath << "..." << std::endl; // Debug print
         std::ofstream logFile(filePath, std::ios::app);
         if (logFile.is_open()) {
+            logBuffer.reverse(); // Reverse the list before writing
             for (const auto& entry : logBuffer) {
-                logFile << entry << std::endl;
+                logFile<< entry.eventName << " " << entry.duration << std::endl;
             }
             logFile.close();
-            std::cerr << "Log written to " << filePath << std::endl; // Debug print
         } else {
-            std::cerr << "Unable to open log file at " << filePath << std::endl; // Error message
+            std::cerr << "Unable to open log file at " << filePath << std::endl;
         }
     }
 };
