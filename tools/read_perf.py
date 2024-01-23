@@ -4,6 +4,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 class PerfEventData:
+	"""
+	represents a peace of sampled data from linux perf tools
+	"""
 	event_source: str
 	process_id: int
 	timestamp: float

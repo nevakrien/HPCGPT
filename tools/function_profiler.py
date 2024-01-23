@@ -13,41 +13,59 @@
 import read_perf as r_sample
 import read_code_perf as r_code
 
+from read_code_perf import FunctionData,LogData
+
 from os.path import join
+from typing import List
+from dataclasses import dataclass
 
-def create_conversion_functions(std_start, std_end, perf_start, perf_end):
-    """
-    Create conversion functions based on start and end times from std::chrono and perf.
+from multiprocessing import Pool
 
-    Args:
-    std_start (float): Start time from std::chrono.
-    std_end (float): End time from std::chrono.
-    perf_start (float): Start time from perf.
-    perf_end (float): End time from perf.
+@dataclass
+class CallData():
+    function : FunctionData
+    inner_calls :list#will be a List['CallData'] at the end
 
-    Returns:
-    tuple of functions: (std_to_perf, perf_to_std)
-    """
-    # Calculate the scale and offset for conversion
-    std_duration = std_end - std_start
-    perf_duration = perf_end - perf_start
-    scale = perf_duration / std_duration
-    offset = perf_start - std_start * scale
 
-    # Conversion functions
-    def std_to_perf(std_time):
-        """Convert std::chrono time to perf time."""
-        return std_time * scale + offset
+#this is fairly slow... even tho its quite optimized.
+#we are still moving a bunch of memory around gcing and using 1 thread 
+#but for python this is pretty much as far as it goes
+def make_call_stack(raw_logs : List[LogData]):
+    ans=[]
 
-    def perf_to_std(perf_time):
-        """Convert perf time to std::chrono time."""
-        return (perf_time - offset) / scale
+    if len(raw_logs)==0:
+        return ans
+    
+    start_log=raw_logs[0]
+    inner_calls=[]
 
-    return std_to_perf, perf_to_std
+    with Pool() as pool:
+        for log in raw_logs[1:]:
+            if start_log==None:
+                start_log=log 
+                continue
 
-def analys(samples,calls):
-    pass
+            if(log.name==start_log.name):
+                entry=CallData(
+                        FunctionData(start_log,log),
+                        inner_calls
+                        )
+                pool.apply_async(process_call,(entry,))
+                ans.append(entry)
+                start_log=None
+                ans=[]
+            else:
+                inner_calls.append(log)
+        
+        assert start_log is None #checking all calls closed
+        
+        pool.close()  # No more tasks will be submitted to the pool
+        pool.join()   # Wait for the worker processes to exit
+    
+    return ans
 
+def process_call(x:CallData):
+    x.inner_calls=make_call_stack(x.inner_calls)
 
 if __name__ == "__main__":
     file_path=join('results','combo')
@@ -55,6 +73,8 @@ if __name__ == "__main__":
     perf_samples=r_sample.parse_file(join(file_path,'output.txt'))
     raw_logs=r_code.parse_file(join(file_path,'code_perf_output.txt'))
     function_calls=r_code.make_intervals(raw_logs)
+
+    call_stack=make_call_stack(raw_logs)
 
     print(max(x.timestamp for x in perf_samples))
     print(max(x.seconds for x in raw_logs))

@@ -21,12 +21,15 @@ class LogData():
 		self.seconds=float(x[2])
 
 class FunctionData():
+	"""
+	represents a function call loged by instromentation
+	"""
 	start : float #seconds
 	end : float
 	name : str
 
 
-	def __init__(self,s,e):
+	def __init__(self,s:LogData,e:LogData):
 		assert(s.name==e.name)
 		assert(s.start)
 		assert(not e.start)
