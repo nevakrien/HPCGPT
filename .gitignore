@@ -13,3 +13,5 @@ CMakeSettings.json
 Testing
 
 assets/gpt2/model_file.data
+
+__pycache__

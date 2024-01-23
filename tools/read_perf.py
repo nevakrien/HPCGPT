@@ -126,12 +126,19 @@ def plot_include(processes,include):
 def sentize_name(name):
 	return name.split('+')[0]
 
+def parse_file(file_path):
+	with open(file_path) as f:
+		data=f.read()
+	return [PerfEventData(x) for x in data.split('\n') if x]
+
 if __name__=="__main__":
 
-	with open(join('results','output.txt')) as f:
-		data=f.read()
+	#with open(join('results','output.txt')) as f:
+	# with open('output.txt') as f:
+	# 	data=f.read()
+	data= [x.to_dict() for x in parse_file(join('results','output.txt'))]
 
-	data=[PerfEventData(x).to_dict() for x in data.split('\n') if x]
+	#data=[PerfEventData(x).to_dict() for x in data.split('\n') if x]
 
 	#print(data[:3])
 	#print(max([d['cycles'] for d in data]))
@@ -146,6 +153,9 @@ if __name__=="__main__":
 
 	#print({k:len(v) for k,v in proces.items()})
 	print(len(proces))
+
+	t=[d['timestamp'] for d in data]
+	print(max(t)-min(t))
 	#plot(proces)
 	plot_combined(proces)
 	#plot_include(proces,[4,5,6,0])

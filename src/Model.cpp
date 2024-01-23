@@ -130,7 +130,7 @@ Tensor Model::transformerBlock(const Tensor &x, const TransformerBlock &block, u
 }
 
 Tensor Model::gpt2(const std::vector<int32_t> &inputs, const GPT2::Params &params, uint32_t head, std::vector<KVCache> &cache) {
-  LOG_EVENT(LogEvents::Start);//checking
+  LOG_EVENT(LogEvents::GptStart);//checking
   bool useCache = !cache.empty();
 
   // token + positional embeddings
@@ -153,7 +153,7 @@ Tensor Model::gpt2(const std::vector<int32_t> &inputs, const GPT2::Params &param
   x = layerNorm(x, params.ln_f.g, params.ln_f.b);
   //return Tensor::matmulTrans(x, params.wte);
   x=Tensor::matmulTrans(x, params.wte);
-  LOG_EVENT(LogEvents::End);
+  LOG_EVENT(LogEvents::GptEnd);
   return x;
 }
 

@@ -13,7 +13,7 @@
 #include <sstream>
 
 #include <iostream>
-
+#include <iomanip>
 
 // Check if NEVA_TIME_BENCHMARK is defined
 #ifdef NEVA_TIME_BENCHMARK
@@ -23,6 +23,9 @@
 namespace LogEvents {
     constexpr const char* Start = "Started program";
     constexpr const char* End = "Ended program";
+
+    constexpr const char* GptStart = "Started gpt2";
+    constexpr const char* GptEnd = "Ended gpt2";
     
     constexpr const char* MultiStart = "Started MultiHeadAttention";
     constexpr const char* MultiEnd = "Ended MultiHeadAttention";
@@ -40,11 +43,12 @@ namespace LogEvents {
     // Add more event names as needed
 }
 
+
 class PerfLogger {
 public:
     struct LogEntry {
         std::string eventName;
-        long long duration; // Duration in nanoseconds
+        timespec time;  // Using timespec for time measurement
     };
 
     static PerfLogger& getInstance() {
@@ -53,26 +57,34 @@ public:
     }
 
     void logEvent(const char* eventName) {
-        auto now = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(now - startTime).count();
-        logBuffer.push_front({eventName, duration});
+        timespec now;
+        clock_gettime(CLOCK_MONOTONIC, &now); // Get the current time using clock_gettime
+        logBuffer.push_front({eventName, now});
     }
 
     ~PerfLogger() {
+        logEvent(LogEvents::End);
         writeToDisk(LogEvents::OutputFile);
     }
 
 private:
-    std::chrono::time_point<std::chrono::high_resolution_clock> startTime;
     std::forward_list<LogEntry> logBuffer;
-    PerfLogger() : startTime(std::chrono::high_resolution_clock::now()) {}
+    PerfLogger() {
+        logEvent(LogEvents::Start);
+    }
 
     void writeToDisk(const char* filePath) {
         std::ofstream logFile(filePath, std::ios::app);
         if (logFile.is_open()) {
-            logBuffer.reverse(); // Reverse the list before writing
-            for (const auto& entry : logBuffer) {
-                logFile<< entry.eventName << " " << entry.duration << std::endl;
+            if (!logBuffer.empty()) {
+                logBuffer.reverse();
+                for (const auto& entry : logBuffer) {
+                    // Concatenate seconds and nanoseconds into a single decimal number
+                    logFile << entry.eventName << " "
+                            << entry.time.tv_sec << "." 
+                            << std::setw(9) << std::setfill('0') << entry.time.tv_nsec
+                            << std::endl;
+                }
             }
             logFile.close();
         } else {
