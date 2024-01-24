@@ -3,6 +3,7 @@
  * @author 	: keith@robot9.me
  *
  */
+#include"PerfLogger.h"
 
 #include "Tensor.h"
 #include "Logger.h"
@@ -744,11 +745,14 @@ Tensor Tensor::dot(const Tensor &a, const Tensor &b) {
 }
 
 Tensor Tensor::matmul(const Tensor &a, const Tensor &b) {
+  LOG_EVENT(LogEvents::TensorMulStart);
+  
   TENSOR_CHECK_EMPTY_PAIR(a, b, {})
 
   // Multiplication by scalars is not allowed, use * instead.
   if (a.isScalar() || b.isScalar()) {
     Tensor::error(__FUNCTION__, TensorError_InvalidShape);
+    LOG_EVENT(LogEvents::TensorMulEnd);
     return {};
   }
 
@@ -773,6 +777,7 @@ Tensor Tensor::matmul(const Tensor &a, const Tensor &b) {
   // check matrix multiplication compatible
   if (shapeA.back() != shapeB[shapeB.size() - 2]) {
     Tensor::error(__FUNCTION__, TensorError_ShapeNotAligned);
+    LOG_EVENT(LogEvents::TensorMulEnd);
     return {};
   }
 
@@ -781,6 +786,7 @@ Tensor Tensor::matmul(const Tensor &a, const Tensor &b) {
   auto compatible = checkCompatible(shapeA, shapeB, retShape, 2);
   if (compatible == ShapeCompatible_Error) {
     Tensor::error(__FUNCTION__, TensorError_ShapeNotAligned);
+    LOG_EVENT(LogEvents::TensorMulEnd);
     return {};
   }
 
@@ -822,10 +828,12 @@ Tensor Tensor::matmul(const Tensor &a, const Tensor &b) {
     }
   }
 
+  LOG_EVENT(LogEvents::TensorMulEnd);
   return retTensor;
 }
 
 Tensor Tensor::matmulTrans(const Tensor &a, const Tensor &b) {
+  LOG_EVENT(LogEvents::TensorTransMulStart);
   // fast path
   if (a.dim() == 2 && b.dim() == 2) {
     // a[m, k], b[n, k] -> [k, n]
@@ -834,14 +842,17 @@ Tensor Tensor::matmulTrans(const Tensor &a, const Tensor &b) {
     uint32_t n = b.shape()[0];
     if (k != b.shape()[1]) {
       Tensor::error(__FUNCTION__, TensorError_ShapeNotAligned);
+      LOG_EVENT(LogEvents::TensorTransMulEnd);
       return {};
     }
     Tensor retTensor = Tensor::shape({m, n});
     Algebra::gemmTrans(&retTensor[0], &a[0], &b[0], m, k, n);
+    LOG_EVENT(LogEvents::TensorTransMulEnd);
     return retTensor;
   }
 
   // slow path
+  LOG_EVENT(LogEvents::TensorTransMulEnd);
   return matmul(a, b.transpose());
 }
 

@@ -157,8 +157,10 @@ Tensor Model::gpt2(const std::vector<int32_t> &inputs, const GPT2::Params &param
   return x;
 }
 
+//this function is parsed slightly wrong by python in a way that warps the call stack but not the active time
 void Model::generate(std::vector<int32_t> &tokens, const GPT2::Params &params, uint32_t head,
                      uint32_t maxTokens, const std::function<bool(int32_t token)> &callback) {
+  LOG_EVENT(LogEvents::GenStart);
   std::vector<KVCache> cache;
   // auto-regressive decode loop
   for (uint32_t tokenCnt = 0; tokenCnt < maxTokens; tokenCnt++) {
@@ -176,6 +178,7 @@ void Model::generate(std::vector<int32_t> &tokens, const GPT2::Params &params, u
       }
     }
   }
+  LOG_EVENT(LogEvents::GenEnd);
 }
 
 bool Model::loadModelGPT2(GPT2 &gpt2, const char *hparams, const char *modelDict) {

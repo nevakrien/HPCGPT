@@ -10,8 +10,9 @@ from dataclasses import dataclass
 #from multiprocessing import Pool
 from concurrent.futures import ThreadPoolExecutor
 
-import matplotlib.pyplot as plt
-import matplotlib.patches as patches
+
+from collections import defaultdict
+import pandas as pd 
 
 @dataclass
 class CallData():
@@ -19,10 +20,16 @@ class CallData():
     inner_calls :list#will be a List['CallData'] at the end
     processed :bool = False
 
+@dataclass
+class PerfData():
+    call:CallData 
+    time :float
+
+
 #this code was really slow until I used specifcly ThreadPoolExecutor 
 #ProcessPoolExecutor had too nuch overhead? 
 #serial code was also very slow not sure why.
-def make_call_stack(raw_logs: List[LogData]):
+def make_call_stack(raw_logs: List[LogData],ignores=[]):
     if not raw_logs:
         return []
 
@@ -32,6 +39,8 @@ def make_call_stack(raw_logs: List[LogData]):
     
     with ThreadPoolExecutor() as executor:
         for log in raw_logs[1:]:
+            if log.name in ignores:
+                continue
             if start_log is None:
                 start_log = log
                 continue
@@ -68,11 +77,26 @@ def print_call_stack(call_data, level=0):
 
     for inner_call in call_data.inner_calls:
         print_call_stack(inner_call, level + 1)
-# Usage
-# plot_funcs(main_call)
 
+#PROFILE
+def _calculate_time(calls,funcs):
+    total_time=0
 
+    for c in calls:
+        inner_time=_calculate_time(c.inner_calls,funcs)
+        call_time=c.function.end-c.function.start
+        total_time+=call_time
 
+        funcs[c.function.name].append(PerfData(c,call_time-inner_time))
+
+    return total_time
+
+def calculate_time(calls):
+    data=defaultdict(lambda:[])
+    _calculate_time(calls,data)
+    return {k:sum(x.time for x in v) for k,v in data.items()}
+
+#Validation:
 def check_processed(call):
     if not call.processed:
         return False
@@ -89,7 +113,7 @@ if __name__ == "__main__":
     raw_logs=r_code.parse_file(join(file_path,'code_perf_output.txt'))
     #function_calls=r_code.make_intervals(raw_logs)
 
-    call_stack=make_call_stack(raw_logs)
+    call_stack=make_call_stack(raw_logs)#,['gpt2'])
 
     print(check_processed(call_stack[0]))
 
@@ -101,4 +125,11 @@ if __name__ == "__main__":
     
     assert len(call_stack)==1
 
-    print(print_call_stack(call_stack[0]))
+    #print(print_call_stack(call_stack[0]))
+    #print(calculate_time(call_stack))
+    times=calculate_time(call_stack)
+    total_time=sum(times.values())
+    df={k:[v,v/total_time] for k,v in times.items()}
+    df=pd.DataFrame(df,index=['time spend','frac'])
+    #df['frac']=df['time spend']/df['time spend'].sum()
+    print(df)

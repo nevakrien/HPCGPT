@@ -26,6 +26,9 @@ namespace LogEvents {
 
     constexpr const char* GptStart = "Started gpt2";
     constexpr const char* GptEnd = "Ended gpt2";
+
+    constexpr const char* GenStart = "Started generate";
+    constexpr const char* GenEnd = "Ended generate";
     
     constexpr const char* MultiStart = "Started MultiHeadAttention";
     constexpr const char* MultiEnd = "Ended MultiHeadAttention";
@@ -38,6 +41,12 @@ namespace LogEvents {
 
     constexpr const char* NormStart = "Started layerNorm";
     constexpr const char* NormEnd = "Ended layerNorm";
+
+    constexpr const char* TensorMulStart = "Started Tensor::matmul";
+    constexpr const char* TensorMulEnd = "Ended Tensor::matmul";
+
+    constexpr const char* TensorTransMulStart = "Started Tensor::matmulTrans";
+    constexpr const char* TensorTransMulEnd = "Ended Tensor::matmulTrans";
 
     constexpr const char* OutputFile = "code_perf_output.txt";
     // Add more event names as needed
