@@ -6,7 +6,8 @@
 #ifndef PERFLOGGER_H
 #define PERFLOGGER_H
 
-#include <chrono>
+//#include <chrono>
+#include <time.h>
 #include <fstream>
 #include <string>
 #include <forward_list>
@@ -53,6 +54,8 @@ namespace LogEvents {
 }
 
 
+
+
 class PerfLogger {
 public:
     struct LogEntry {
@@ -76,10 +79,12 @@ public:
         writeToDisk(LogEvents::OutputFile);
     }
 
+
+
 private:
     std::forward_list<LogEntry> logBuffer;
     PerfLogger() {
-        logEvent(LogEvents::Start);
+        //logEvent(LogEvents::Start); //moved to be at the constructor(101) so that its as close to the start as we can possibly make it
     }
 
     void writeToDisk(const char* filePath) {
@@ -105,6 +110,10 @@ private:
 
 #define LOG_EVENT(event) PerfLogger::getInstance().logEvent(event)
 
+__attribute__((constructor(101)))
+void firstInitialization() {
+    LOG_EVENT(LogEvents::Start);
+}
 #else
 
 

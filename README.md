@@ -54,6 +54,12 @@ cmake -B ./build_timer -DCMAKE_BUILD_TYPE=RelWithDebInfo -DNEVA_TIME_BENCHMARK=O
 cmake --build ./build_timer --config Release
 ```
 
+```bash
+perf record -k CLOCK_MONOTONIC ./build_timer/bin/TinyGPT_benchmark
+```
+
+
+
 ## Dependencies
 
 - GEMM acceleration

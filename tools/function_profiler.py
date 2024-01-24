@@ -5,7 +5,7 @@ from read_code_perf import FunctionData,LogData
 from read_perf import PerfEventData
 
 from os.path import join
-from typing import List,Set
+from typing import List,Generator
 from dataclasses import dataclass
 
 #from multiprocessing import Pool
@@ -14,6 +14,8 @@ from concurrent.futures import ThreadPoolExecutor
 
 from collections import defaultdict
 import pandas as pd 
+
+import copy
 
 @dataclass
 class CallData():
@@ -98,53 +100,71 @@ def calculate_time(calls):
     return {k:sum(x.time for x in v) for k,v in data.items()}
 
 
-@dataclass
-class PerfData:
-    call: CallData
-    data: Set[PerfEventData]  # Now using a set instead of a list
+class CallIntevals():
+    #function : FunctionData
+    #inner_calls# =[]#will be a List['CallData'] at the end
+    #i=0
 
-#bad code both buggy and slow keeping it for refrences
-from bisect import bisect_left
+    def __init__(self,function):
+        self.function=function
+        self.inner_calls=[]
+        self.i=0
 
-def find_start_index(logs, start_time):
-    """ Find the index of the first log after the start_time using binary search. """
-    index = bisect_left([log.timestamp for log in logs], start_time)
-    return index if index < len(logs) else None
 
-def logs_for_func(func: FunctionData, sorted_logs) -> List[PerfEventData]:
-    start_index = find_start_index(sorted_logs, func.start)
-    if start_index is None:
-        return []
+    def get_atributed(self,t):
+        """
+        we are assuming that t is in the range for self
+        note that this method modifys the class
+        we are expecting you to be responsible and call in in assending orders of t
+        this also assumes the call tree u put here is valid 
+        """
+        #print(f"got {t} in func {self.function.name}")
+        
+        if(self.i==len(self.inner_calls)):
+            print(f"no call stack remaining returining {self.function.name}")
+            return self
 
-    relevant_logs = []
-    for log in sorted_logs[start_index:]:
-        if log.timestamp > func.end:
-            break
-        relevant_logs.append(log)
+        c=self.inner_calls[self.i]
+        if c.function.start>t:
+            print(f"inner func {c.function.name} is too late with {c.function.start}returning {self.function.name}")
+            return self
+        
+        if(t>c.function.end):
+            print(f"inner func {c.function.name} is too early returning incrementing")
+            self.i+=1
+            return self.get_atributed(t)
 
-    return relevant_logs
+        print(f"inner func {c.function.name} is valid calling it")
+        return c.get_atributed(t)
 
-def _seperate_logs(calls, logs, funcs):
-    logs.sort(key=lambda x: x.timestamp)
-    total_logs = set()
 
-    for c in calls:
-        inner_logs = _seperate_logs(c.inner_calls, logs, funcs)
-        call_logs = logs_for_func(c.function, logs)
-        total_logs.update(call_logs)
+    @staticmethod
+    def from_call(call:CallData):
+        x=CallIntevals(call.function)
+        with ThreadPoolExecutor() as pool:
+            x.inner_calls=list(pool.map(CallIntevals.from_call,call.inner_calls))
+        
+        x.function.start#-=7.5#-=6.33 #magic pref number got from expirementing around until it made sense
+        x.function.end#-=7.5#-=6.33
+        x.inner_calls.sort(key=lambda x:x.function.start)#,reverse=True)
+        return x
 
-        unique_call_logs = set(call_logs) - inner_logs
-        # Convert to a sorted list when adding to funcs, if necessary
-        funcs[c.function.name].append(PerfData(c, sorted(unique_call_logs, key=lambda x: x.timestamp)))
 
-    return total_logs
+def get_perfstuff(call,perf_data):
+    data=defaultdict(lambda:[])
+    call=CallIntevals.from_call(call)
+    assert len(call.inner_calls)
 
-def get_os_info(calls, system_logs):
-    data = defaultdict(list)
-    _seperate_logs(calls, system_logs, data)
+    perf_data.sort(key=lambda x: x.timestamp)
 
-    return {k: {'cycles': sum(sum(e.cycles for e in x.data) for x in v),
-            'PID': set().union(*(set(e.process_id for e in x.data) for x in v))} for k, v in data.items()}
+    for p in perf_data[-10:]:
+        a=call.get_atributed(p.timestamp)
+        #print(call.i)
+        data[a.function.name].append(p)
+
+    return data
+
+
 
 
 #Validation:
@@ -157,12 +177,22 @@ def check_processed(call):
 
     return all(map(check_processed,call.inner_calls))
 
+def align_timers(raw_logs,perf_samples):
+    min_sample=(min(x.timestamp for x in perf_samples))
+    min_func=(min(x.seconds for x in raw_logs))
+
+    offset=min_func-min_sample
+    for log in raw_logs:
+        log.seconds-=offset
+
 if __name__ == "__main__":
     file_path=join('results','combo')
 
     perf_samples=r_sample.parse_file(join(file_path,'output.txt'))
     raw_logs=r_code.parse_file(join(file_path,'code_perf_output.txt'))
     #function_calls=r_code.make_intervals(raw_logs)
+    perf_samples=[x for x in perf_samples if x.event_source=='TinyGPT_benchma']
+    #align_timers(raw_logs,perf_samples)
 
     call_stack=make_call_stack(raw_logs)#,['gpt2'])
 
@@ -170,8 +200,19 @@ if __name__ == "__main__":
 
     print(type(call_stack[0].function))
     print(len(call_stack))
-    print(max(x.timestamp for x in perf_samples))
-    print(max(x.seconds for x in raw_logs))
+    
+
+    max_sample=(max(x.timestamp for x in perf_samples))
+    max_func=(max(x.seconds for x in raw_logs[1:-1]))
+
+    min_sample=(min(x.timestamp for x in perf_samples))
+    min_func=(min(x.seconds for x in raw_logs[1:-1]))
+
+    print(f'{min_func}<=inner funcs<={max_func}')
+    print(f'{min_sample}<=linux sample<={max_sample}')
+    print(f'\npart of program we measured:{(max_func-min_func)/(max_sample-min_sample)}\n')
+
+    print(f'data size on inner funcs: {len([x for x in perf_samples if min_func<x.timestamp<max_func])}\n')
     #perf_samples.sort(key=lambda x: x.timestamp)
     
     assert len(call_stack)==1
@@ -187,6 +228,6 @@ if __name__ == "__main__":
 
     print(2*'\n')
 
-    perf_info=get_os_info(call_stack,perf_samples)
-    print(perf_info)
+    perf_info=get_perfstuff(call_stack[0],perf_samples)
+    print(perf_info.keys())
 
