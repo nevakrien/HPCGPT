@@ -15,6 +15,22 @@ class PerfEventData:
 	memory_address: str
 	function_name: str
 	#event_context: str
+	
+	def __eq__(self, other):
+	    if not isinstance(other, PerfEventData):
+	        return NotImplemented
+
+	    return (self.event_source == other.event_source and
+	            self.process_id == other.process_id and
+	            self.timestamp == other.timestamp and
+	            self.cycles == other.cycles and
+	            self.event_gatherer == other.event_gatherer and
+	            self.memory_address == other.memory_address and
+	            self.function_name == other.function_name)
+
+	def __hash__(self):
+	    return hash((self.event_source, self.process_id, self.timestamp,
+	                 self.cycles, self.event_gatherer, self.memory_address, self.function_name))
 
 	def __init__(self, split_data):
 		if(type(split_data)==str):
