@@ -221,9 +221,16 @@ def check_processed(call):
 
 
 if __name__ == "__main__":
+    import argparse
     pd.set_option('display.float_format', lambda x: '%.6f' % x)
 
-    file_path=join('results','combo')
+    parser = argparse.ArgumentParser(description='Process some data.')
+    parser.add_argument('--file-path', type=str, default=join('results', 'combo'),
+                        help='Specify the file path instead of "combo"')
+    
+    args = parser.parse_args()
+    file_path = args.file_path
+    #file_path=join('results','combo')
 
     perf_samples=r_sample.parse_file(join(file_path,'output.txt'))
     raw_logs=r_code.parse_file(join(file_path,'code_perf_output.txt'))
@@ -231,7 +238,9 @@ if __name__ == "__main__":
     perf_samples=[x for x in perf_samples if x.event_source=='TinyGPT_benchma']
     #align_timers(raw_logs,perf_samples)
 
-    call_stack=make_call_stack(raw_logs)#,['gpt2'])
+    #THIS IS WHERE U EDIT WHAT FUNCTIONS ARE IGNORED
+    raw_logs=[x for x in raw_logs if x.name not in ['Tensor::matmul','Tensor::matmulTrans']]
+    call_stack=make_call_stack(raw_logs)#this version was bugged#,['Tensor::matmul','Tensor::matmulTrans'])#,['gpt2'])
 
     print(check_processed(call_stack[0]))
 
@@ -245,6 +254,7 @@ if __name__ == "__main__":
     min_sample=(min(x.timestamp for x in perf_samples))
     min_func=(min(x.seconds for x in raw_logs[1:-1]))
 
+    print(f'Total time {max_sample-min_sample}')
     print(f'{min_func}<=inner funcs<={max_func}')
     print(f'{min_sample}<=linux sample<={max_sample}')
     print(f'\npart of program we measured:{(max_func-min_func)/(max_sample-min_sample)}\n')

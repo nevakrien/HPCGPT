@@ -99,11 +99,21 @@ Tensor Model::multiHeadAttention(const Tensor &x, const Conv1D &attn, const Conv
 
   // perform attention over each head
   std::vector<Tensor> outHeads;
+  
+
+  #ifndef USE_OPTIMIZED_ATTENTION
   outHeads.reserve(qkvHeads.size());
   for (uint32_t i = 0; i < head; i++) {
     outHeads.emplace_back(attention(qkvHeads[0][i], qkvHeads[1][i], qkvHeads[2][i], causalMask));
   }
-
+  #else
+  outHeads.resize(head); //original was just off here
+  #pragma omp parallel for
+  for (uint32_t i = 0; i < head; i++) {
+    outHeads[i] = attention(qkvHeads[0][i], qkvHeads[1][i], qkvHeads[2][i], causalMask);
+  }
+  #endif
+  
   // merge heads
   xx = Tensor::hstack({begin(outHeads), end(outHeads)});
 

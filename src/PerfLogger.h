@@ -84,7 +84,7 @@ public:
 private:
     std::forward_list<LogEntry> logBuffer;
     PerfLogger() {
-        //logEvent(LogEvents::Start); //moved to be at the constructor(101) so that its as close to the start as we can possibly make it
+        logEvent(LogEvents::Start); //moved to be at the constructor(101) so that its as close to the start as we can possibly make it
     }
 
     void writeToDisk(const char* filePath) {
@@ -110,10 +110,10 @@ private:
 
 #define LOG_EVENT(event) PerfLogger::getInstance().logEvent(event)
 
-__attribute__((constructor(101)))
-void firstInitialization() {
-    LOG_EVENT(LogEvents::Start);
-}
+// __attribute__((constructor(101)))
+// void nevafirstInitialization() {
+//     LOG_EVENT(LogEvents::Start);
+// }
 #else
 
 

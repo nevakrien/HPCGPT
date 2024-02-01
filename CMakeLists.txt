@@ -27,6 +27,17 @@ else()
     message(STATUS "NEVA_TIME_BENCHMARK is disabled.")
 endif()
 
+# Option for using the optimized multiHeadAttention, OFF by default
+option(USE_OPTIMIZED_ATTENTION "Use Optimized multiHeadAttention" OFF)
+
+# Check if USE_OPTIMIZED_ATTENTION is enabled and add compile definition
+if(USE_OPTIMIZED_ATTENTION)
+    add_compile_definitions(USE_OPTIMIZED_ATTENTION=1)
+    message(STATUS "USE_OPTIMIZED_ATTENTION is enabled.")
+else()
+    message(STATUS "USE_OPTIMIZED_ATTENTION is disabled.")
+endif()
+
 add_subdirectory(src)
 add_subdirectory(app)
 add_subdirectory(benchmark)
